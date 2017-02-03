@@ -13,8 +13,8 @@
 	</style>
 </head>
 <body>
-	<h1>3 - Cellular Ecosystem with Breeding</h1> <a href=".">Home</a>
-	<p>The breeding algorithm is straight simple. When 2 creature with the same level collide, create new creature of the same level located a little further from the first crature. To control the birth rate, we introduce a breeding chance factor on the crature.breed() method.</p>
+	<h1>4 - Cellular Ecosystem with Breeding + Predator</h1> <a href=".">Home</a>
+	<p>We finally step up to implement our food-chain simulation. This simple simulation decide when lower lover creature meet higher level creature, they would be eaten based on a death_chance factor.</p>
 	
 	<div id="game_window"></div>
 
@@ -92,12 +92,12 @@ function Creature(level, world) {
 	this.x = Math.round(Math.random()*world.size);
 	this.y = Math.round(Math.random()*world.size);
 
-	// this.state = state_random(this);
-	this.state = new state_move_random(this);
+	this.state = state_random(this);
+	// this.state = new state_move_random(this);
 }
 
 Creature.prototype.breed = function() {
-	var breed_chance = 0.5;
+	var breed_chance = 0.75;
 	if (Math.random() < breed_chance) {
 		new_creature = new Creature(this.level, this.world);
 		new_creature.x = a.x+3;
@@ -113,11 +113,10 @@ function World(game_window, window_size) {
 	this.size = window_size;
 
 	this.creatures = [];
-	for (var i=0;i<8;i++) {
-		var new_c = new Creature(1, this);
+	for (var i=0;i<Math.random()*12;i++) {
+		var new_c = new Creature(Math.random()*3, this);
 		this.creatures.push(new_c);
 	}
-	// console.log(this.creatures);
 	
 	this.interval = null;
 }
@@ -128,6 +127,7 @@ World.prototype.run = function() {
 };
 
 World.prototype.loop_content = function() {
+	var self = this;
 	// run all cratures state
 	this.creatures.forEach(function(creature) {
 		creature.state.run();
@@ -135,6 +135,8 @@ World.prototype.loop_content = function() {
 
 	// check collition
 	var n_creature = this.creatures.length;
+	var death_list = [];
+	var death_chance = 0.25;
 	for (var i = 0; i < n_creature; i++) {
 		for (var j = i+1; j < n_creature; j++) {
 			a = this.creatures[i];
@@ -143,10 +145,20 @@ World.prototype.loop_content = function() {
 				if (a.level == b.level) {
 					console.log('Creature ' + i + ' and ' + j + ' is mating!');
 					a.breed();
+				} else if (a.level > b.level) {
+					if (!death_list.includes(j) && Math.random() < death_chance) death_list.push(j);
+				} else {
+					if (!death_list.includes(i) && Math.random() < death_chance) death_list.push(i);
 				}
 			}
 		}
 	}
+
+	// process the death list
+	death_list.sort(function(a, b){return b-a});
+	death_list.forEach(function(i) {
+		self.creatures.splice(i,1);
+	});
 
 	// render map background
 	var map = [];
